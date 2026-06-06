@@ -5,24 +5,31 @@ import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 
 export default function ReportsPage() {
-  const [reports,  setReports]  = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [genLoad,  setGenLoad]  = useState(false)
+  const [reports,   setReports]   = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [genLoad,   setGenLoad]   = useState(false)
   const [dlLoading, setDlLoading] = useState(null)
 
-  useEffect(() => {
-    getReports()
-      .then(setReports)
-      .catch(() => toast.error('Gagal load reports.'))
-      .finally(() => setLoading(false))
-  }, [])
+  async function loadReports() {
+    try {
+      const data = await getReports()
+      setReports(data)
+    } catch {
+      toast.error('Gagal load reports.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadReports() }, [])
 
   async function handleGenerate() {
     setGenLoad(true)
     try {
-      const r = await generateReport()
-      setReports(prev => [r, ...prev])
+      await generateReport()
       toast.success('Report berhasil di-generate!')
+      // Reload dari DB biar format datanya konsisten
+      await loadReports()
     } catch {
       toast.error('Gagal generate report. Pastikan Edge Function sudah di-deploy.')
     } finally {
@@ -85,11 +92,13 @@ export default function ReportsPage() {
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <FileText size={15} color="var(--text-muted)" />
-                      <span style={{ color: 'var(--text-primary)', textTransform: 'capitalize' }}>{r.report_type?.replace('_', ' ')}</span>
+                      <span style={{ color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                        {r.report_type?.replace('_', ' ') ?? 'Cashflow Report'}
+                      </span>
                     </div>
                   </td>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                    {format(parseISO(r.created_at), 'dd MMM yyyy HH:mm')}
+                    {r.created_at ? format(parseISO(r.created_at), 'dd MMM yyyy HH:mm') : '-'}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {r.file_url || '—'}

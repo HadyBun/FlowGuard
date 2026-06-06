@@ -12,10 +12,11 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 )
 
+
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
 }
 
 Deno.serve(async (req) => {
@@ -113,7 +114,6 @@ Deno.serve(async (req) => {
         end_date:                endDate.toISOString().split('T')[0],
         total_projected_income:  mlData.total_projected_income,
         total_projected_expense: mlData.total_projected_expense,
-        net_cashflow:            mlData.net_cashflow,
       })
       .select()
       .single()
@@ -129,8 +129,6 @@ Deno.serve(async (req) => {
       predicted_expense: d.predicted_expense,
       predicted_balance: d.predicted_balance,
       // kolom opsional — tambahkan ke tabel kalau mau tampilkan CI di chart
-      balance_upper:     d.balance_upper,
-      balance_lower:     d.balance_lower,
     }))
 
     const { error: detailErr } = await supabase
