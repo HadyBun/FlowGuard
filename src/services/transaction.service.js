@@ -16,13 +16,29 @@ export async function getTransactions({ type, status, limit = 50 } = {}) {
 }
 
 export async function addTransaction(payload) {
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: prof }     = await supabase.from('users').select('business_id').single()
+  // Ambil user session
+  const { data: { user }, error: userErr } = await supabase.auth.getUser()
+  if (userErr || !user) throw new Error('User tidak terautentikasi')
+
+  // Ambil business_id dari tabel users
+  const { data: prof, error: profErr } = await supabase
+    .from('users')
+    .select('business_id')
+    .eq('id', user.id)
+    .single()
+
+  if (profErr || !prof?.business_id) throw new Error('Business ID tidak ditemukan')
 
   const { data, error } = await supabase
     .from('transactions')
-    .insert({ ...payload, user_id: user.id, business_id: prof.business_id })
-    .select().single()
+    .insert({
+      ...payload,
+      user_id:     user.id,
+      business_id: prof.business_id,
+    })
+    .select()
+    .single()
+
   if (error) throw error
   return data
 }
@@ -42,7 +58,6 @@ export async function deleteTransaction(id) {
   if (error) throw error
 }
 
-// Summary untuk dashboard
 export async function getTransactionSummary() {
   const startOfMonth = new Date()
   startOfMonth.setDate(1)

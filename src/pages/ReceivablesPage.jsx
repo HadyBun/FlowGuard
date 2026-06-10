@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { getReceivables, addReceivable, updateReceivableStatus, deleteReceivable } from '../services/receivable.service'
+import { addTransaction } from '../services/transaction.service'
 import { Plus, Trash2, Check, Clock } from 'lucide-react'
 import { format, parseISO, isPast } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -46,9 +47,22 @@ export default function ReceivablesPage() {
 
   async function handleMarkPaid(id) {
     try {
+      const item = items.find(i => i.id === id)
+
+      // 1. Update status receivable → PAID
       const updated = await updateReceivableStatus(id, 'PAID')
       setItems(prev => prev.map(i => i.id === id ? updated : i))
-      toast.success('Ditandai sudah dibayar.')
+
+      // 2. Otomatis buat transaksi INCOME agar balance bertambah
+      await addTransaction({
+        type:             'INCOME',
+        amount:           Number(item.amount),
+        description:      `Pembayaran piutang diterima - ${item.client_name}`,
+        status:           'PAID',
+        transaction_date: new Date().toISOString().split('T')[0],
+      })
+
+      toast.success('Piutang lunas & pemasukan tercatat di transaksi!')
     } catch { toast.error('Gagal update.') }
   }
 

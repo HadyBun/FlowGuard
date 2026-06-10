@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink } from 'react-router-dom'
 import AIAdvisor from '../ai/AIAdvisor'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import {
   LayoutDashboard, ArrowLeftRight, TrendingUp,
   FlaskConical, Bell, FileText, LogOut, ChevronRight,
-  ArrowDownLeft, ArrowUpRight, Sparkles
+  ArrowDownLeft, ArrowUpRight, Sparkles, Sun, Moon
 } from 'lucide-react'
 
 const navItems = [
@@ -25,20 +25,27 @@ const navItems = [
 
 export default function MainLayout() {
   const { profile, logout } = useAuth()
-  const [unread, setUnread]     = useState(0)
+  const [unread,    setUnread]    = useState(0)
   const [collapsed, setCollapsed] = useState(false)
+  const [theme,     setTheme]     = useState(
+    () => localStorage.getItem('fg-theme') || 'dark'
+  )
 
+  // Apply theme ke <html>
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('fg-theme', theme)
+  }, [theme])
+
+  // Alert badge
   useEffect(() => {
     getUnreadCount().then(setUnread)
-
-    // Realtime: update badge saat alert baru masuk
     const channel = supabase
       .channel('alert-count')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts' }, () => {
         setUnread(n => n + 1)
       })
       .subscribe()
-
     return () => supabase.removeChannel(channel)
   }, [])
 
@@ -56,6 +63,7 @@ export default function MainLayout() {
         transition: 'width .2s ease',
         overflow: 'hidden',
       }}>
+
         {/* Logo */}
         <div style={{ padding: '0 16px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
@@ -112,8 +120,38 @@ export default function MainLayout() {
           ))}
         </nav>
 
-        {/* User + logout */}
+        {/* Bottom: theme toggle + user + logout */}
         <div style={{ padding: '12px 8px 0', borderTop: '0.5px solid var(--border)', marginTop: 8 }}>
+
+          {/* Theme toggle */}
+          <button
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              width: '100%', padding: '9px 10px', marginBottom: 4,
+              background: 'none', border: 'none',
+              color: 'var(--text-muted)', fontSize: 13,
+              borderRadius: 'var(--radius-md)', transition: 'all .15s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--accent-dim)'
+              e.currentTarget.style.color = 'var(--accent)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'none'
+              e.currentTarget.style.color = 'var(--text-muted)'
+            }}
+          >
+            {theme === 'dark'
+              ? <Sun  size={16} style={{ flexShrink: 0 }} />
+              : <Moon size={16} style={{ flexShrink: 0 }} />
+            }
+            {!collapsed && (theme === 'dark' ? 'Light Mode' : 'Dark Mode')}
+          </button>
+
+          {/* User info */}
           {!collapsed && profile && (
             <div style={{ padding: '0 10px 10px' }}>
               <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -124,6 +162,8 @@ export default function MainLayout() {
               </div>
             </div>
           )}
+
+          {/* Logout */}
           <button
             onClick={logout}
             style={{
@@ -162,11 +202,11 @@ export default function MainLayout() {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, overflow: 'auto', padding: 28 }}>
+      <main style={{ flex: 1, overflow: 'auto', padding: 28, background: 'var(--bg-base)' }}>
         <Outlet />
       </main>
 
-      {/* AI floating bubble — muncul di semua halaman */}
+      {/* AI floating bubble */}
       <AIAdvisor floating={true} />
     </div>
   )

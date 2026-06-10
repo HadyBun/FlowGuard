@@ -194,3 +194,46 @@ tr:hover td { background: var(--bg-elevated); color: var(--text-primary); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .page-enter { animation: fadeUp .2s ease forwards; }
+
+
+/*light mode */
+
+[data-theme="light"] {
+  --bg-base:       #f4f5f7;
+  --bg-surface:    #ffffff;
+  --bg-elevated:   #eef0f4;
+  --bg-overlay:    #e4e6ec;
+ 
+  --border:        rgba(0,0,0,0.08);
+  --border-hover:  rgba(0,0,0,0.15);
+ 
+  --text-primary:  #111318;
+  --text-secondary:#4a4f62;
+  --text-muted:    #9095a8;
+ 
+  --accent:        #00a87e;
+  --accent-dim:    rgba(0,168,126,0.1);
+  --accent-glow:   rgba(0,168,126,0.2);
+ 
+  --danger:        #e03355;
+  --danger-dim:    rgba(224,51,85,0.1);
+ 
+  --warning:       #d4870a;
+  --warning-dim:   rgba(212,135,10,0.1);
+ 
+  --success:       #00a87e;
+  --success-dim:   rgba(0,168,126,0.1);
+ 
+  --info:          #2979d4;
+  --info-dim:      rgba(41,121,212,0.1);
+}
+ 
+[data-theme="light"] body,
+[data-theme="light"] #root {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+ 
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+}

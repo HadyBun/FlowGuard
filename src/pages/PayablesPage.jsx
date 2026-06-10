@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { getPayables, addPayable, updatePayableStatus, deletePayable } from '../services/payable.service'
+import { addTransaction } from '../services/transaction.service'
 import { Plus, Trash2, Check, Clock } from 'lucide-react'
 import { format, parseISO, isPast } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -46,9 +47,22 @@ export default function PayablesPage() {
 
   async function handleMarkPaid(id) {
     try {
+      const item = items.find(i => i.id === id)
+
+      // 1. Update status payable → PAID
       const updated = await updatePayableStatus(id, 'PAID')
       setItems(prev => prev.map(i => i.id === id ? updated : i))
-      toast.success('Ditandai sudah dibayar.')
+
+      // 2. Otomatis buat transaksi EXPENSE agar balance berkurang
+      await addTransaction({
+        type:             'EXPENSE',
+        amount:           Number(item.amount),
+        description:      `Pembayaran hutang - ${item.vendor_name}`,
+        status:           'PAID',
+        transaction_date: new Date().toISOString().split('T')[0],
+      })
+
+      toast.success('Hutang lunas & pengeluaran tercatat di transaksi!')
     } catch { toast.error('Gagal update.') }
   }
 

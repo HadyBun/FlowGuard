@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { getTransactionSummary } from '../services/transaction.service'
 import { getLatestForecast, triggerForecast } from '../services/forecast.service'
@@ -47,31 +48,36 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function DashboardPage() {
   const { profile } = useAuth()
-  const [summary,  setSummary]  = useState(null)
-  const [forecast, setForecast] = useState(null)
-  const [alerts,   setAlerts]   = useState([])
-  const [loading,  setLoading]  = useState(true)
+  const location    = useLocation()  // ← detect setiap navigasi ke /dashboard
+  const [summary,    setSummary]    = useState(null)
+  const [forecast,   setForecast]   = useState(null)
+  const [alerts,     setAlerts]     = useState([])
+  const [loading,    setLoading]    = useState(true)
   const [genLoading, setGenLoading] = useState(false)
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [s, f, a] = await Promise.all([
-          getTransactionSummary(),
-          getLatestForecast(),
-          getAlerts({ onlyUnread: true }),
-        ])
-        setSummary(s)
-        setForecast(f)
-        setAlerts(a)
-      } catch (err) {
-        toast.error('Gagal load data dashboard.')
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true)
+    try {
+      const [s, f, a] = await Promise.all([
+        getTransactionSummary(),
+        getLatestForecast(),
+        getAlerts({ onlyUnread: true }),
+      ])
+      setSummary(s)
+      setForecast(f)
+      setAlerts(a)
+    } catch {
+      toast.error('Gagal load data dashboard.')
+    } finally {
+      setLoading(false)
     }
-    load()
   }, [])
+
+  // Re-fetch setiap kali route berubah ke /dashboard
+  // (termasuk saat navigasi dari PayablesPage / ReceivablesPage)
+  useEffect(() => {
+    load(true)
+  }, [location.pathname, load])
 
   async function handleGenForecast() {
     setGenLoading(true)
